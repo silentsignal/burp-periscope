@@ -32,20 +32,33 @@ class BurpExtender : IBurpExtender {
             val parts = it.url.host.split('.')
             val ps = parts.size
             val addMenuItems = mutableListOf<JMenuItem>()
+            val excludeMenuItems = mutableListOf<JMenuItem>()
             for (length in ps downTo 1) {
                 val postfix = parts.subList(ps - length, ps).joinToString(".")
                 val mi = JMenuItem("Add *.$postfix to scope (all protocols, ports and paths)")
                 mi.addActionListener { addToScope(postfix) }
                 addMenuItems.add(mi)
+                val miExclude = JMenuItem("Exclude *.$postfix from scope (all protocols, ports and paths)")
+                miExclude.addActionListener { excludeFromScope(postfix) }
+                excludeMenuItems.add(miExclude)
             }
             addMenuItems.forEach { menuItem -> topLevel.add(menuItem) }
+            topLevel.addSeparator()
+            excludeMenuItems.forEach { menuItem -> topLevel.add(menuItem) }
         }
         return topLevel
     }
 
     private fun addToScope(postfix: String) {
-        val newItem = ScopeItem(enabled = true, host = "\\.${Regex.escape(postfix)}$")
-        config = Root(Target(Scope(config.target.scope.include + listOf(newItem))))
+        val newItem = ScopeItem.fromPostfix(postfix)
+        val scope = config.target.scope
+        config = Root(Target(Scope(include = scope.include + listOf(newItem), exclude = scope.exclude)))
+    }
+
+    private fun excludeFromScope(postfix: String) {
+        val newItem = ScopeItem.fromPostfix(postfix)
+        val scope = config.target.scope
+        config = Root(Target(Scope(include = scope.include, exclude = scope.exclude + listOf(newItem))))
     }
 
     private var config: Root
@@ -55,8 +68,12 @@ class BurpExtender : IBurpExtender {
 
 @Serializable
 data class ScopeItem(val enabled: Boolean, @Optional val host: String = "", @Optional val file: String = "",
-                   @Optional val protocol: String = "any", @Optional val port: String = "")
+                   @Optional val protocol: String = "any", @Optional val port: String = "") {
+    companion object {
+        fun fromPostfix(postfix: String) = ScopeItem(enabled = true, host = "\\.${Regex.escape(postfix)}$")
+    }
+}
 
-@Serializable data class Scope(val include: List<ScopeItem>)
+@Serializable data class Scope(val include: List<ScopeItem>, val exclude: List<ScopeItem>, val advanced_mode: Boolean = true)
 @Serializable data class Target(val scope: Scope)
 @Serializable data class Root(val target: Target)
