@@ -50,20 +50,16 @@ class BurpExtender : IBurpExtender {
     }
 
     private fun addToScope(postfix: String) {
-        val newItem = ScopeItem.fromPostfix(postfix)
-        val scope = config.target.scope
-        config = Root(Target(Scope(include = scope.include + listOf(newItem), exclude = scope.exclude)))
+        scope = Scope(include = scope.include + listOf(ScopeItem.fromPostfix(postfix)), exclude = scope.exclude)
     }
 
     private fun excludeFromScope(postfix: String) {
-        val newItem = ScopeItem.fromPostfix(postfix)
-        val scope = config.target.scope
-        config = Root(Target(Scope(include = scope.include, exclude = scope.exclude + listOf(newItem))))
+        scope = Scope(include = scope.include, exclude = scope.exclude + listOf(ScopeItem.fromPostfix(postfix)))
     }
 
-    private var config: Root
-        get() = JSON.parse(Root.serializer(), callbacks.saveConfigAsJson("target.scope"))
-        set(value) = callbacks.loadConfigFromJson(JSON.stringify(Root.serializer(), value))
+    private var scope: Scope
+        get() = JSON.parse(Root.serializer(), callbacks.saveConfigAsJson("target.scope")).target.scope
+        set(value) = callbacks.loadConfigFromJson(JSON.stringify(Root.serializer(), Root(Target(value))))
 }
 
 @Serializable
