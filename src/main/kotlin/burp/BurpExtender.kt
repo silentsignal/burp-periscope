@@ -31,12 +31,14 @@ class BurpExtender : IBurpExtender {
         messages.map(helpers::analyzeRequest).forEach {
             val parts = it.url.host.split('.')
             val ps = parts.size
+            val addMenuItems = mutableListOf<JMenuItem>()
             for (length in ps downTo 1) {
                 val postfix = parts.subList(ps - length, ps).joinToString(".")
                 val mi = JMenuItem("Add *.$postfix to scope (all protocols, ports and paths)")
                 mi.addActionListener { addToScope(postfix) }
-                topLevel.add(mi)
+                addMenuItems.add(mi)
             }
+            addMenuItems.forEach { menuItem -> topLevel.add(menuItem) }
         }
         return topLevel
     }
