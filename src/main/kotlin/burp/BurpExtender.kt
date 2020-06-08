@@ -44,19 +44,19 @@ class BurpExtender : IBurpExtender {
     }
 
     private fun addToScope(postfix: String) {
-        val oldScope = callbacks.saveConfigAsJson("target.scope.include")
-        val parsed = JSON.parse(Root.serializer(), oldScope)
-        val newItem = Include(enabled = true, host = "\\.${Regex.escape(postfix)}$")
-        val wrapped = Root(Target(Scope(parsed.target.scope.include + listOf(newItem))))
-        val serialized = JSON.stringify(Root.serializer(), wrapped)
-        callbacks.loadConfigFromJson(serialized)
+        val newItem = ScopeItem(enabled = true, host = "\\.${Regex.escape(postfix)}$")
+        config = Root(Target(Scope(config.target.scope.include + listOf(newItem))))
     }
+
+    private var config: Root
+        get() = JSON.parse(Root.serializer(), callbacks.saveConfigAsJson("target.scope"))
+        set(value) = callbacks.loadConfigFromJson(JSON.stringify(Root.serializer(), value))
 }
 
 @Serializable
-data class Include(val enabled: Boolean, @Optional val host: String = "", @Optional val file: String = "",
+data class ScopeItem(val enabled: Boolean, @Optional val host: String = "", @Optional val file: String = "",
                    @Optional val protocol: String = "any", @Optional val port: String = "")
 
-@Serializable data class Scope(val include: List<Include>)
+@Serializable data class Scope(val include: List<ScopeItem>)
 @Serializable data class Target(val scope: Scope)
 @Serializable data class Root(val target: Target)
